@@ -145,9 +145,8 @@ void set(char *pathname)
                     job_list[i++] = entry->d_name;
         job_list[i] = NULL;
         closedir(directory);
-    } else {
+    } else
         printf("Invalid job path. Run 'set [pathname]'.\n");
-    }
 }
 
 /*
@@ -168,17 +167,16 @@ void run(char *filename)
         return;
     }
 
-    if (filename == NULL) {
+    if (filename == NULL)
         for (int i = 0; job_list[i] != NULL; i++)
             run_job(job_list[i]);
-    } else if (strchr(filename, '.') != NULL) {
+    else if (strchr(filename, '.') != NULL) {
         if (in_job_list(filename))
             run_job(filename);
         else
             printf("Invalid job. Chose job from 'list'.\n");
-    } else {
+    } else
         printf("'%s' not found. Specify full filename.\n", filename);
-    }
 }
 
 void run_job(char *jobname)
@@ -196,10 +194,9 @@ void run_job(char *jobname)
 }
 
 bool in_job_list(char *jobname) {
-    for (int i = 0; job_list[i] != NULL; i++) {
+    for (int i = 0; job_list[i] != NULL; i++)
         if (strcmp(job_list[i], jobname) == 0)
             return true;
-    }
     return false;
 }
 
