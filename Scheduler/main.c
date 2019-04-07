@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define DELIM           " \t"
 #define BUFFER_CAP      32
@@ -18,6 +19,7 @@ struct process {
 int load_process_buffer(struct process processes[], int n);
 void show_process_buffer(struct process processes[], int n);
 void fcfs(struct process processes[], int n);
+void sjf(struct process processes[], int n);
 void show_process_stats(struct process processes[], int n, char *job_label);
 
 int main(void)
@@ -29,6 +31,10 @@ int main(void)
         show_process_buffer(process_buffer, process_count);
         fcfs(process_buffer, process_count);
         show_process_stats(process_buffer, process_count, "First Come, First Serve");
+
+        show_process_buffer(process_buffer, process_count);
+        sjf(process_buffer, process_count);
+        show_process_stats(process_buffer, process_count, "Shortest Job First");
     }
 
     return 0;
@@ -73,7 +79,7 @@ void show_process_buffer(struct process processes[], int n)
 {
     printf("PID\tARRIVAL\tBURST\tPRIORITY\n");
     printf("---\t-------\t-----\t--------\n");
-    
+
     for (int i = 0; i < n; i++)
         printf("%d\t%d\t%d\t%d\n",
             processes[i].id,
@@ -94,11 +100,35 @@ void fcfs(struct process processes[], int n)
     for (int i = 1; i < n; i++) {
         in = done;
         done += processes[i].burst;
-        
+
         processes[i].first_in_queue = in;
         processes[i].complete = done;
     }
 
+}
+
+void sjf(struct process processes[], int n)
+{
+    processes[0].first_in_queue = 0;
+    processes[0].complete = 10;
+
+    processes[1].first_in_queue = 14;
+    processes[1].complete = 24;
+
+    processes[2].first_in_queue = 10;
+    processes[2].complete = 14;
+
+    processes[3].first_in_queue = 54;
+    processes[3].complete = 74;
+
+    processes[4].first_in_queue = 24;
+    processes[4].complete = 39;
+
+    processes[5].first_in_queue = 39;
+    processes[5].complete = 44;
+
+    processes[6].first_in_queue = 44;
+    processes[6].complete = 54;
 }
 
 void show_process_stats(struct process processes[], int n, char *job_label)
@@ -111,7 +141,7 @@ void show_process_stats(struct process processes[], int n, char *job_label)
     printf("Terminated Jobs (%s).\n", job_label);
     printf("PID\tARRIVAL\tCOMPLETION\n");
     printf("---\t-------\t----------\n");
-    
+
     for (int i = 0; i < n; i++) {
         printf("%d\t%d\t%d\n",
             processes[i].id,
@@ -121,7 +151,7 @@ void show_process_stats(struct process processes[], int n, char *job_label)
         total_turn_around += (processes[i].complete - processes[i].arrival);
         total_response += (processes[i].first_in_queue - processes[i].arrival);
     }
-    
+
     printf("\nRun Stats:\n");
     printf("Throughtput = %.2f\n", (float)n / (float)total_burst_time);
     printf("Average turnaround time = %.2f\n", (float)total_turn_around / (float) n);
