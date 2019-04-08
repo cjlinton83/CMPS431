@@ -7,24 +7,24 @@
 #define BUFFER_CAP      32
 #define INPUT_LINE_LEN  80
 
-struct process {
+typedef struct {
     int id;
     int arrival;
     int burst;
     int priority;
     int first_in_queue;
     int complete;
-};
+} Process;
 
-int load_process_buffer(struct process processes[], int n);
-void show_process_buffer(struct process processes[], int n);
-void fcfs(struct process processes[], int n);
-void sjf(struct process processes[], int n);
-void show_process_stats(struct process processes[], int n, char *job_label);
+int load_process_buffer(Process processes[], int n);
+void show_process_buffer(Process processes[], int n);
+void fcfs(Process processes[], int n);
+void sjf(Process processes[], int n);
+void show_process_stats(Process processes[], int n, char *job_label);
 
 int main(void)
 {
-    struct process process_buffer[BUFFER_CAP];
+    Process process_buffer[BUFFER_CAP];
     int process_count;
 
     if ((process_count = load_process_buffer(process_buffer, BUFFER_CAP)) != 0) {
@@ -45,7 +45,7 @@ int main(void)
  *   into the processes buffer. The function loads up to n processes.
  *   the function returns the number of processes loaded into the buffer.
  */
-int load_process_buffer(struct process processes[], int n)
+int load_process_buffer(Process processes[], int n)
 {
     FILE *fp;
     fp = fopen("./input", "r");
@@ -75,7 +75,7 @@ int load_process_buffer(struct process processes[], int n)
     return i;
 }
 
-void show_process_buffer(struct process processes[], int n)
+void show_process_buffer(Process processes[], int n)
 {
     printf("PID\tARRIVAL\tBURST\tPRIORITY\n");
     printf("---\t-------\t-----\t--------\n");
@@ -89,7 +89,7 @@ void show_process_buffer(struct process processes[], int n)
     printf("\n");
 }
 
-void fcfs(struct process processes[], int n)
+void fcfs(Process processes[], int n)
 {
     int in = processes[0].arrival;
     int done = processes[0].burst;
@@ -107,31 +107,12 @@ void fcfs(struct process processes[], int n)
 
 }
 
-void sjf(struct process processes[], int n)
+void sjf(Process processes[], int n)
 {
-    processes[0].first_in_queue = 0;
-    processes[0].complete = 10;
 
-    processes[1].first_in_queue = 14;
-    processes[1].complete = 24;
-
-    processes[2].first_in_queue = 10;
-    processes[2].complete = 14;
-
-    processes[3].first_in_queue = 54;
-    processes[3].complete = 74;
-
-    processes[4].first_in_queue = 24;
-    processes[4].complete = 39;
-
-    processes[5].first_in_queue = 39;
-    processes[5].complete = 44;
-
-    processes[6].first_in_queue = 44;
-    processes[6].complete = 54;
 }
 
-void show_process_stats(struct process processes[], int n, char *job_label)
+void show_process_stats(Process processes[], int n, char *job_label)
 {
     int total_burst_time = 0;
     int total_turn_around = 0;
