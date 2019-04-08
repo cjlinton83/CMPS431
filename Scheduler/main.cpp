@@ -18,31 +18,39 @@ typedef struct {
     int complete;
 } Process;
 
-int load_new_processes(Process processes[], int n);
-void show_new_processes(Process processes[], int n);
-void fcfs(Process processes[], int n);
-void sjf(Process processes[], int n);
-void rr(Process processes[], int n);
-void show_stats(Process processes[], int n);
+int load_new_processes();
+void show_new_processes();
+void fcfs();
+void sjf();
+void rr();
+void show_stats();
+
+Process processes[BUFFER_CAP];
+int n = 0;
 
 int main()
 {
-    Process new_processes[BUFFER_CAP];
-    int process_count = 0;
-
     cout.setf(ios_base::fixed, ios_base::floatfield);
     cout.precision(2);
 
-    if ((process_count = load_new_processes(new_processes, BUFFER_CAP)) != 0) {
-        fcfs(new_processes, process_count);
-        sjf(new_processes, process_count);
-        rr(new_processes, process_count);
+    if ((n = load_new_processes()) != 0) {
+        // show_new_processes();
+        // fcfs();
+        // show_stats();
+
+        show_new_processes();
+        sjf();
+        show_stats();
+
+        // show_new_processes();
+        // rr();
+        // show_stats();
     }
 
     return 0;
 }
 
-int load_new_processes(Process processes[], int n)
+int load_new_processes()
 {
     int i = 0;
     fstream fs("./input", fstream::in);
@@ -51,13 +59,15 @@ int load_new_processes(Process processes[], int n)
     if (fs.is_open()) {
         getline(fs, line);
         while (getline(fs, line)) {
-            istringstream s_stream(line);
-            while (!s_stream.eof()) {
-                s_stream >> processes[i].id;
-                s_stream >> processes[i].arrival;
-                s_stream >> processes[i].burst;
-                s_stream >> processes[i].priority;
-                i++;
+            if (i < BUFFER_CAP) {
+                istringstream s_stream(line);
+                while (!s_stream.eof()) {
+                    s_stream >> processes[i].id;
+                    s_stream >> processes[i].arrival;
+                    s_stream >> processes[i].burst;
+                    s_stream >> processes[i].priority;
+                    i++;
+                }
             }
         }
         fs.close();
@@ -66,7 +76,7 @@ int load_new_processes(Process processes[], int n)
     return i;
 }
 
-void show_new_processes(Process processes[], int n)
+void show_new_processes()
 {
     cout << "PID\tARRIVE\tBURST\tPRIORITY" << endl;
     cout << "---\t------\t-----\t--------" << endl;
@@ -79,10 +89,10 @@ void show_new_processes(Process processes[], int n)
         cout << endl;
     }
 
-    cout << "\nNumber of jobs in NewQ = " << n << endl << endl;
+    cout << "Number of jobs in NewQ = " << n << endl << endl;
 }
 
-void show_stats(Process processes[], int n)
+void show_stats()
 {
     float throughput, turnaround, response, total_burst;
     throughput = turnaround = response = total_burst = 0.0f;
@@ -101,7 +111,7 @@ void show_stats(Process processes[], int n)
         total_burst += processes[i].burst;
     }
 
-    cout << "\nRun Stats" << endl;
+    cout << "Run Stats" << endl;
     cout << "Throughput = " << (float)n / total_burst << endl;
     cout << "Average turnaround time = " << turnaround / (float)n << endl;
     cout << "Average response time = " << response / (float) n << endl << endl;
@@ -115,22 +125,18 @@ bool sort_ready(Process *p1, Process *p2) {
     return (p1->burst < p2->burst);
 }
 
-void fcfs(Process processes[], int n)
+void fcfs()
 {
 
 }
 
-void sjf(Process processes[], int n)
+void sjf()
 {
     int total_time = 0;
 
     deque<Process *> arriveQ;
     deque<Process *> readyQ;
 
-    // Show newQ
-    show_new_processes(processes, n);
-
-    // setup and perform SJF
     for (int i = 0; i < n; i++)
         arriveQ.push_back(processes + i);
 
@@ -156,12 +162,10 @@ void sjf(Process processes[], int n)
         }
     }
 
-    // Show stats
     cout << "Terminated Jobs. (Shortest Job First)" << endl;
-    show_stats(processes, n);
 }
 
-void rr(Process processes[], int n)
+void rr()
 {
 
 }
