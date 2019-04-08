@@ -34,9 +34,9 @@ int main()
     cout.precision(2);
 
     if ((n = load_new_processes()) != 0) {
-        // show_new_processes();
-        // fcfs();
-        // show_stats();
+        show_new_processes();
+        fcfs();
+        show_stats();
 
         show_new_processes();
         sjf();
@@ -114,7 +114,7 @@ void show_stats()
     cout << "Run Stats" << endl;
     cout << "Throughput = " << (float)n / total_burst << endl;
     cout << "Average turnaround time = " << turnaround / (float)n << endl;
-    cout << "Average response time = " << response / (float) n << endl << endl;
+    cout << "Average response time = " << response / (float)n << endl << endl;
 }
 
 bool sort_arrive(Process *p1, Process *p2) {
@@ -127,7 +127,34 @@ bool sort_ready(Process *p1, Process *p2) {
 
 void fcfs()
 {
+    int total_time = 0;
 
+    deque<Process *> arriveQ;
+    deque<Process *> readyQ;
+
+    for (int i = 0; i < n; i++)
+        arriveQ.push_back(processes + i);
+
+    sort(arriveQ.begin(), arriveQ.end(), sort_arrive);
+
+    while (!arriveQ.empty() || !readyQ.empty()) {
+
+        if (!arriveQ.empty())
+            if (arriveQ.front()->arrival <= total_time) {
+                readyQ.push_back(arriveQ.front());
+                arriveQ.pop_front();
+                continue;
+            }
+
+        if (!readyQ.empty()) {
+            readyQ.front()->first_in_run = total_time;
+            total_time += readyQ.front()->burst;
+            readyQ.front()->complete = total_time;
+            readyQ.pop_front();
+        }
+    }
+
+    cout << "Terminated Jobs. (First Come, First Serve)" << endl;
 }
 
 void sjf()
