@@ -20,6 +20,7 @@ void clear_stats(std::deque<Process *> *newQ, int n);
 void show_stats(std::deque<Process *> processQ, int n, std::string name);
 std::deque<Process *> fcfs(std::deque<Process *> *newQ, int n);
 std::deque<Process *> sjf(std::deque<Process *> *newQ, int n);
+std::deque<Process *> rr(std::deque<Process *> *newQ, int n, int quantum);
 
 int main()
 {
@@ -35,6 +36,10 @@ int main()
         show_queue(newQ, n);
         finishedQ = sjf(&newQ, n);
         show_stats(finishedQ, n, "Shortest Job First");
+
+        show_queue(newQ, n);
+        finishedQ = rr(&newQ, n, 15);
+        show_stats(finishedQ, n, "Round Robin");
     }
     
     return 0;
@@ -203,6 +208,54 @@ std::deque<Process *> sjf(std::deque<Process *> *newQ, int n)
             total_time += p->burst;
             p->finished = total_time;
             finishedQ.push_back(p);
+        }
+    }
+    
+    return finishedQ;
+}
+
+std::deque<Process *> rr(std::deque<Process *> *newQ, int n, int quantum)
+{
+    int total_time = 0;
+
+    std::deque<Process *> readyQ;
+    std::deque<Process *> runQ;
+    std::deque<Process *> finishedQ;
+
+    clear_stats(newQ, n);
+
+    for (int i = 0; i < n; i++) {
+        readyQ.push_back((*newQ)[i]);
+    }
+    std::sort(newQ->begin(), newQ->end(), sort_arrival);
+
+    while (!readyQ.empty() || !runQ.empty()) {
+        if (!readyQ.empty()) {
+            if (readyQ.front()->arrival <= total_time) {
+                Process *p = readyQ.front();
+                readyQ.pop_front();
+                runQ.push_back(p);
+                continue;
+            }
+        }
+
+        if (!runQ.empty()) {
+            Process *p = runQ.front();
+            runQ.pop_front();
+
+            if (p->start < 0) {
+                p->start = total_time;
+            }
+
+            if (p->working_burst <= quantum) {
+                total_time += p->working_burst;
+                p->finished = total_time;
+                finishedQ.push_back(p);
+            } else {
+                total_time += quantum;
+                p->working_burst -= quantum;
+                runQ.push_back(p);
+            }
         }
     }
     
