@@ -159,31 +159,6 @@ std::deque<Process *> fcfs(std::deque<Process *> *newQ, int n)
     return finishedQ;
 }
 
-//     for (int i = 0; i < n; i++)
-//         arriveQ.push_back(processes + i);
-
-//     sort(arriveQ.begin(), arriveQ.end(), sort_arrive);
-
-//     while (!arriveQ.empty() || !readyQ.empty()) {
-
-//         if (!arriveQ.empty())
-//             if (arriveQ.front()->arrival <= total_time) {
-//                 readyQ.push_back(arriveQ.front());
-//                 arriveQ.pop_front();
-//                 continue;
-//             }
-
-//         if (!readyQ.empty()) {
-//             readyQ.front()->first_in_run = total_time;
-//             total_time += readyQ.front()->burst;
-//             readyQ.front()->complete = total_time;
-//             readyQ.pop_front();
-//         }
-//     }
-
-//     cout << "Terminated Jobs. (First Come, First Serve)" << endl;
-// }
-
 // void sjf()
 // {
 //     int total_time = 0;
