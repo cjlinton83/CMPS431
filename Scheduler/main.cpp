@@ -1,198 +1,269 @@
-#include <iostream>
-#include <fstream>
+#include <stdio.h>
 #include <string>
-#include <sstream>
 #include <deque>
-#include <algorithm>
 
-#define BUFFER_CAP 32
-
-using namespace std;
+#define LINE_CAP 80
 
 typedef struct {
     int id;
     int arrival;
     int burst;
     int priority;
-    int first_in_run;
-    int complete;
+    int working_burst;
+    int start;
+    int finished;
 } Process;
 
-int load_new_processes();
-void show_new_processes();
-void fcfs();
-void sjf();
-void rr();
-void show_stats();
-
-Process processes[BUFFER_CAP];
-int n = 0;
+int load_new_queue(std::deque<Process *> *newQ);
+void show_queue(std::deque<Process *> newQ, int n);
+void clear_stats(std::deque<Process *> *newQ, int n);
+void show_stats(std::deque<Process *> processQ, int n, std::string name);
+std::deque<Process *> fcfs(std::deque<Process *> *newQ, int n);
 
 int main()
 {
-    cout.setf(ios_base::fixed, ios_base::floatfield);
-    cout.precision(2);
+    std::deque<Process *> newQ;
+    std::deque<Process *> finishedQ;
+    int n;
 
-    if ((n = load_new_processes()) != 0) {
-        show_new_processes();
-        fcfs();
-        show_stats();
-
-        show_new_processes();
-        sjf();
-        show_stats();
-
-        // show_new_processes();
-        // rr();
-        // show_stats();
+    if ((n = load_new_queue(&newQ)) > 0) {
+        show_queue(newQ, n);
+        finishedQ = fcfs(&newQ, n);
+        show_stats(finishedQ, n, "First Come First Serve");
     }
-
+    
     return 0;
 }
 
-int load_new_processes()
+int load_new_queue(std::deque<Process *> *newQ)
 {
-    int i = 0;
-    fstream fs("./input", fstream::in);
-    string line;
+    int n = 0;
+    FILE *fp = fopen("input", "r");
+    char line[LINE_CAP+1];
 
-    if (fs.is_open()) {
-        getline(fs, line);
-        while (getline(fs, line)) {
-            if (i < BUFFER_CAP) {
-                istringstream s_stream(line);
-                while (!s_stream.eof()) {
-                    s_stream >> processes[i].id;
-                    s_stream >> processes[i].arrival;
-                    s_stream >> processes[i].burst;
-                    s_stream >> processes[i].priority;
-                    i++;
-                }
-            }
+    if (fp != NULL) {
+        fgets(line, LINE_CAP, fp); // remove header
+        while (fgets(line, LINE_CAP, fp) != NULL) {
+            int id, arrival, burst, priority;
+
+            sscanf(line, "%d %d %d %d", &id, &arrival, &burst, &priority);
+            Process *p = (Process *) malloc(sizeof(Process));
+            p->id = id;
+            p->arrival = arrival;
+            p->burst = burst;
+            p->priority = priority;
+            p->working_burst = burst;
+            p->start = -1;
+            p->finished = -1;
+            newQ->push_back(p);
+            n++;
         }
-        fs.close();
+        fclose(fp);
     }
 
-    return i;
+    return n;
 }
 
-void show_new_processes()
+void show_queue(std::deque<Process *> newQ, int n)
 {
-    cout << "PID\tARRIVE\tBURST\tPRIORITY" << endl;
-    cout << "---\t------\t-----\t--------" << endl;
+    printf("PID\tARRIVAL\tBURST\tPRIORITY\n");
+    printf("---\t-------\t-----\t--------\n");
 
     for (int i = 0; i < n; i++) {
-        cout << processes[i].id << "\t";
-        cout << processes[i].arrival << "\t";
-        cout << processes[i].burst << "\t";
-        cout << processes[i].priority << "\t";
-        cout << endl;
+        printf("%d\t%d\t%d\t%d\n",
+            newQ[i]->id, newQ[i]->arrival,
+            newQ[i]->burst, newQ[i]->priority);
     }
 
-    cout << "Number of jobs in NewQ = " << n << endl << endl;
+    printf("Number of jobs in queue: %d\n\n", n);
 }
 
-void show_stats()
+void clear_stats(std::deque<Process *> *newQ, int n)
+{
+    for (int i = 0; i < n; i++) {
+        (*newQ)[i]->working_burst = (*newQ)[i]->burst;
+        (*newQ)[i]->start = -1;
+        (*newQ)[i]->finished = -1;
+    }
+}
+
+void show_stats(std::deque<Process *> processQ, int n, std::string name)
 {
     float throughput, turnaround, response, total_burst;
     throughput = turnaround = response = total_burst = 0.0f;
 
-    cout << "PID\tARRIVE\tCOMPLETE" << endl;
-    cout << "---\t------\t--------" << endl;
+    printf("Terminated jobs (%s)\n", name.c_str());
+    printf("PID\tARRIVAL\tCOMPLETE\n");
+    printf("---\t-------\t--------\n");
 
     for (int i = 0; i < n; i++) {
-        cout << processes[i].id << "\t";
-        cout << processes[i].arrival << "\t";
-        cout << processes[i].complete << "\t";
-        cout << endl;
+        printf("%d\t%d\t%d\n",
+            processQ[i]->id, processQ[i]->arrival, processQ[i]->finished);
 
-        turnaround += (processes[i].complete - processes[i].arrival);
-        response += (processes[i].first_in_run - processes[i].arrival);
-        total_burst += processes[i].burst;
+        turnaround += (processQ[i]->finished - processQ[i]->arrival);
+        response += (processQ[i]->start - processQ[i]->arrival);
+        total_burst += processQ[i]->burst;
     }
 
-    cout << "Run Stats" << endl;
-    cout << "Throughput = " << (float)n / total_burst << endl;
-    cout << "Average turnaround time = " << turnaround / (float)n << endl;
-    cout << "Average response time = " << response / (float)n << endl << endl;
+    throughput = (float)n / total_burst;
+    turnaround /= (float)n;
+    response /= (float)n;
+    
+    printf("Run Stats:\n");
+    printf("Throughput = %.2f\n", throughput);
+    printf("Average turnaround time = %.2f\n", turnaround);
+    printf("Average response time = %.2f\n\n", response);
 }
 
-bool sort_arrive(Process *p1, Process *p2) {
-    return (p1->arrival < p2->arrival);
+bool sort_arrival(Process *p1, Process *p2)
+{
+    return p1->arrival < p2->arrival;
 }
 
-bool sort_ready(Process *p1, Process *p2) {
-    return (p1->burst < p2->burst);
-}
-
-void fcfs()
+std::deque<Process *> fcfs(std::deque<Process *> *newQ, int n)
 {
     int total_time = 0;
 
-    deque<Process *> arriveQ;
-    deque<Process *> readyQ;
+    std::deque<Process *> readyQ;
+    std::deque<Process *> runQ;
+    std::deque<Process *> finishedQ;
 
-    for (int i = 0; i < n; i++)
-        arriveQ.push_back(processes + i);
+    clear_stats(newQ, n);
 
-    sort(arriveQ.begin(), arriveQ.end(), sort_arrive);
+    for (int i = 0; i < n; i++) {
+        readyQ.push_back((*newQ)[i]);
+    }
+    std::sort(newQ->begin(), newQ->end(), sort_arrival);
 
-    while (!arriveQ.empty() || !readyQ.empty()) {
-
-        if (!arriveQ.empty())
-            if (arriveQ.front()->arrival <= total_time) {
-                readyQ.push_back(arriveQ.front());
-                arriveQ.pop_front();
+    while (!readyQ.empty() || !runQ.empty()) {
+        if (!readyQ.empty()) {
+            if (readyQ.front()->arrival <= total_time) {
+                Process *p = readyQ.front();
+                readyQ.pop_front();
+                runQ.push_back(p);
                 continue;
             }
+        }
 
-        if (!readyQ.empty()) {
-            readyQ.front()->first_in_run = total_time;
-            total_time += readyQ.front()->burst;
-            readyQ.front()->complete = total_time;
-            readyQ.pop_front();
+        if (!runQ.empty()) {
+            Process *p = runQ.front();
+            runQ.pop_front();
+
+            p->start = total_time;
+            total_time += p->burst;
+            p->finished = total_time;
+            finishedQ.push_back(p);
         }
     }
-
-    cout << "Terminated Jobs. (First Come, First Serve)" << endl;
+    
+    return finishedQ;
 }
 
-void sjf()
-{
-    int total_time = 0;
+//     for (int i = 0; i < n; i++)
+//         arriveQ.push_back(processes + i);
 
-    deque<Process *> arriveQ;
-    deque<Process *> readyQ;
+//     sort(arriveQ.begin(), arriveQ.end(), sort_arrive);
 
-    for (int i = 0; i < n; i++)
-        arriveQ.push_back(processes + i);
+//     while (!arriveQ.empty() || !readyQ.empty()) {
 
-    sort(arriveQ.begin(), arriveQ.end(), sort_arrive);
+//         if (!arriveQ.empty())
+//             if (arriveQ.front()->arrival <= total_time) {
+//                 readyQ.push_back(arriveQ.front());
+//                 arriveQ.pop_front();
+//                 continue;
+//             }
 
-    while (!arriveQ.empty() || !readyQ.empty()) {
+//         if (!readyQ.empty()) {
+//             readyQ.front()->first_in_run = total_time;
+//             total_time += readyQ.front()->burst;
+//             readyQ.front()->complete = total_time;
+//             readyQ.pop_front();
+//         }
+//     }
 
-        if (!arriveQ.empty())
-            if (arriveQ.front()->arrival <= total_time) {
-                readyQ.push_back(arriveQ.front());
-                arriveQ.pop_front();
-                continue;
-            }
+//     cout << "Terminated Jobs. (First Come, First Serve)" << endl;
+// }
+
+// void sjf()
+// {
+//     int total_time = 0;
+
+//     deque<Process *> arriveQ;
+//     deque<Process *> readyQ;
+
+//     for (int i = 0; i < n; i++)
+//         arriveQ.push_back(processes + i);
+
+//     sort(arriveQ.begin(), arriveQ.end(), sort_arrive);
+
+//     while (!arriveQ.empty() || !readyQ.empty()) {
+
+//         if (!arriveQ.empty())
+//             if (arriveQ.front()->arrival <= total_time) {
+//                 readyQ.push_back(arriveQ.front());
+//                 arriveQ.pop_front();
+//                 continue;
+//             }
 
 
-        if (!readyQ.empty()) {
-            sort(readyQ.begin(), readyQ.end(), sort_ready);
+//         if (!readyQ.empty()) {
+//             sort(readyQ.begin(), readyQ.end(), sort_ready);
 
-            readyQ.front()->first_in_run = total_time;
-            total_time += readyQ.front()->burst;
-            readyQ.front()->complete = total_time;
-            readyQ.pop_front();
-        }
-    }
+//             readyQ.front()->first_in_run = total_time;
+//             total_time += readyQ.front()->burst;
+//             readyQ.front()->complete = total_time;
+//             readyQ.pop_front();
+//         }
+//     }
 
-    cout << "Terminated Jobs. (Shortest Job First)" << endl;
-}
+//     cout << "Terminated Jobs. (Shortest Job First)" << endl;
+// }
 
-void rr()
-{
+// void rr()
+// {
+//     int total_time = 0;
 
-}
+//     deque<Process *> arriveQ;
+//     deque<Process *> readyQ;
+
+//     for (int i = 0; i < n; i++) {
+//         processes[i].first_in_run = -1;
+//         processes[i].complete = -1;
+
+//         arriveQ.push_back(processes + i);
+//     }
+
+//     sort(arriveQ.begin(), arriveQ.end(), sort_arrive);
+
+//     while (!arriveQ.empty() || !readyQ.empty()) {
+
+//         if (!arriveQ.empty())
+//             if (arriveQ.front()->arrival <= total_time) {
+//                 readyQ.push_back(arriveQ.front());
+//                 arriveQ.pop_front();
+//                 continue;
+//             }
+
+
+//         if (!readyQ.empty()) {
+//             if (readyQ.front()->first_in_run < 0)
+//                 readyQ.front()->first_in_run = total_time;
+//             if (readyQ.front()->burst <= QUANTUM) {
+//                 total_time += readyQ.front()->burst;
+//                 readyQ.front()->complete = total_time;
+//                 readyQ.pop_front();
+//             } else {
+//                 readyQ.front()->burst -= QUANTUM;
+//                 total_time += QUANTUM;
+//                 if (readyQ.front()->complete < 0) {
+//                     readyQ.push_back(readyQ.front());
+//                     readyQ.pop_front();
+//                     continue;
+//                 }
+//             }
+//         }
+//     }
+    
+//     processes[3].burst = 20;
+//     cout << "Terminated Jobs. (Round Robin)" << endl;
+// }
