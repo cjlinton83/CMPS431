@@ -130,6 +130,21 @@ bool sort_arrival(Process *p1, Process *p2)
     return p1->arrival < p2->arrival;
 }
 
+bool load_run_queue(std::deque<Process *> *readyQ, std::deque<Process *> *runQ,
+    int total_time)
+{
+    bool success = false;
+
+    if (readyQ->front()->arrival <= total_time) {
+        Process *p = readyQ->front();
+        readyQ->pop_front();
+        runQ->push_back(p);
+        success = true;
+    }
+
+    return success;
+}
+
 std::deque<Process *> fcfs(std::deque<Process *> *newQ, int n)
 {
     int total_time = 0;
@@ -146,14 +161,9 @@ std::deque<Process *> fcfs(std::deque<Process *> *newQ, int n)
     std::sort(newQ->begin(), newQ->end(), sort_arrival);
 
     while (!readyQ.empty() || !runQ.empty()) {
-        if (!readyQ.empty()) {
-            if (readyQ.front()->arrival <= total_time) {
-                Process *p = readyQ.front();
-                readyQ.pop_front();
-                runQ.push_back(p);
+        if (!readyQ.empty())
+            if (load_run_queue(&readyQ, &runQ, total_time))
                 continue;
-            }
-        }
 
         if (!runQ.empty()) {
             Process *p = runQ.front();
@@ -190,14 +200,9 @@ std::deque<Process *> sjf(std::deque<Process *> *newQ, int n)
     std::sort(newQ->begin(), newQ->end(), sort_arrival);
 
     while (!readyQ.empty() || !runQ.empty()) {
-        if (!readyQ.empty()) {
-            if (readyQ.front()->arrival <= total_time) {
-                Process *p = readyQ.front();
-                readyQ.pop_front();
-                runQ.push_back(p);
+        if (!readyQ.empty()) 
+            if (load_run_queue(&readyQ, &runQ, total_time))
                 continue;
-            }
-        }
 
         if (!runQ.empty()) {
             std::sort(runQ.begin(), runQ.end(), sort_burst);
@@ -230,14 +235,9 @@ std::deque<Process *> rr(std::deque<Process *> *newQ, int n, int quantum)
     std::sort(newQ->begin(), newQ->end(), sort_arrival);
 
     while (!readyQ.empty() || !runQ.empty()) {
-        if (!readyQ.empty()) {
-            if (readyQ.front()->arrival <= total_time) {
-                Process *p = readyQ.front();
-                readyQ.pop_front();
-                runQ.push_back(p);
+        if (!readyQ.empty())
+            if (load_run_queue(&readyQ, &runQ, total_time))
                 continue;
-            }
-        }
 
         if (!runQ.empty()) {
             Process *p = runQ.front();
